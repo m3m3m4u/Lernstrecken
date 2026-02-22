@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  
+  body {
+    @apply bg-slate-100 text-black;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-black;
+  }
+  
+  p, span, a {
+    @apply text-black;
+  }
+}
