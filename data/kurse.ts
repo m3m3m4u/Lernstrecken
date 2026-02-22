@@ -9,6 +9,7 @@ export const kurse: Kurs[] = [
     farbe: "from-violet-500 to-purple-600",
     icon: "POD",
     lektionen: [],
+    aktiv: true,
   },
   {
     id: "3d-druck",
@@ -17,6 +18,7 @@ export const kurse: Kurs[] = [
     farbe: "from-sky-500 to-blue-600",
     icon: "3D",
     lektionen: [],
+    aktiv: true,
   },
   {
     id: "lasercutter",
@@ -25,6 +27,7 @@ export const kurse: Kurs[] = [
     farbe: "from-rose-500 to-red-600",
     icon: "LAS",
     lektionen: [],
+    aktiv: true,
   },
   {
     id: "lego-spike",
@@ -33,6 +36,7 @@ export const kurse: Kurs[] = [
     farbe: "from-amber-500 to-orange-600",
     icon: "LEG",
     lektionen: [],
+    aktiv: true,
   },
   {
     id: "greenscreen",
@@ -41,5 +45,6 @@ export const kurse: Kurs[] = [
     farbe: "from-emerald-500 to-green-600",
     icon: "GS",
     lektionen: [],
+    aktiv: true,
   },
 ];

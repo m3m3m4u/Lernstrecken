@@ -76,7 +76,8 @@ export default function LektionPage() {
     const aktuelleFrage = aktuelleQuizFragen[quizState.fragenIndex];
     
     // Prüfe ob alle richtigen ausgewählt und keine falschen
-    const richtigeIndizes = aktuelleFrage.antworten
+    const antworten = aktuelleFrage.antworten ?? [];
+    const richtigeIndizes = antworten
       .map((a, i) => (a.richtig ? i : -1))
       .filter((i) => i !== -1);
     
@@ -84,7 +85,7 @@ export default function LektionPage() {
       quizState.ausgewaehlteAntworten.includes(i)
     );
     const keineFalschenGewaehlt = quizState.ausgewaehlteAntworten.every(
-      (i) => aktuelleFrage.antworten[i].richtig
+      (i) => antworten[i].richtig
     );
     
     const istRichtig = alleRichtigenGewaehlt && keineFalschenGewaehlt;
@@ -248,7 +249,7 @@ export default function LektionPage() {
             </h3>
             
             <div className="space-y-3">
-              {aktuelleFrage.antworten.map((antwort, index) => {
+              {(aktuelleFrage.antworten ?? []).map((antwort, index) => {
                 const istAusgewaehlt = quizState.ausgewaehlteAntworten.includes(index);
                 let bgColor = "bg-gray-100 hover:bg-gray-200";
                 let borderColor = "border-gray-300";

@@ -121,7 +121,8 @@ export default function LernenLektionPage() {
     const aktuelleFrage = getAktuelleFrage();
     if (!aktuelleFrage) return;
 
-    const richtigeIndizes = aktuelleFrage.antworten
+    const antworten = aktuelleFrage.antworten ?? [];
+    const richtigeIndizes = antworten
       .map((a, i) => (a.richtig ? i : -1))
       .filter((i) => i !== -1);
 
@@ -129,7 +130,7 @@ export default function LernenLektionPage() {
       quizState.ausgewaehlteAntworten.includes(i)
     );
     const keineFalschenGewaehlt = quizState.ausgewaehlteAntworten.every(
-      (i) => aktuelleFrage.antworten[i].richtig
+      (i) => antworten[i].richtig
     );
 
     const istRichtig = alleRichtigenGewaehlt && keineFalschenGewaehlt;
@@ -401,7 +402,7 @@ export default function LernenLektionPage() {
             </h3>
 
             <div className="space-y-3">
-              {aktuelleFrage.antworten.map((antwort, index) => {
+              {(aktuelleFrage.antworten ?? []).map((antwort, index) => {
                 let bgColor = "bg-white border-gray-300 hover:bg-gray-50";
                 let textColor = "black";
 
