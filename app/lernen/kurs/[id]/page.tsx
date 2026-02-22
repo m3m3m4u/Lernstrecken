@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Kurs, BenutzerFortschritt } from "@/data/types";
 
@@ -14,7 +14,11 @@ interface Benutzer {
 export default function LernenKursPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const kursId = params.id as string;
+  const vorschauParam = searchParams.get("vorschau");
+  const istVorschau = vorschauParam === "true" || vorschauParam === "admin";
+  const istAdminVorschau = vorschauParam === "admin";
 
   const [benutzer, setBenutzer] = useState<Benutzer | null>(null);
   const [kurs, setKurs] = useState<Kurs | null>(null);
@@ -22,6 +26,25 @@ export default function LernenKursPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (istVorschau) {
+      // Vorschau-Modus: Nur Kurs laden, kein Login nötig
+      fetch(`/api/kurse/${kursId}`)
+        .then((res) => res.json())
+        .then((kursData) => {
+          if (kursData.error) {
+            router.push("/admin/dashboard");
+            return;
+          }
+          setKurs(kursData);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("Fehler:", err);
+          setLoading(false);
+        });
+      return;
+    }
+
     const gespeicherterBenutzer = sessionStorage.getItem("benutzer");
     if (!gespeicherterBenutzer) {
       router.push("/login");
@@ -106,15 +129,44 @@ export default function LernenKursPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 p-8 md:p-16">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-7xl mx-auto">
+        {/* Vorschau-Banner */}
+        {istVorschau && (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              <span className="text-amber-800 font-medium">{istAdminVorschau ? "Admin-Vorschau" : "Gast-Modus"}</span>
+              <span className="text-amber-600 text-sm">— Ergebnisse werden nicht gespeichert</span>
+            </div>
+            <div className="flex items-center gap-3">
+              {!istAdminVorschau && (
+                <button
+                  onClick={() => router.push("/login")}
+                  className="text-blue-600 hover:text-blue-800 font-medium text-sm hover:underline"
+                >
+                  Jetzt anmelden
+                </button>
+              )}
+              <button
+                onClick={() => router.push(istAdminVorschau ? "/admin/dashboard" : "/")}
+                className="text-amber-700 hover:text-amber-900 font-medium text-sm hover:underline"
+              >
+                {istAdminVorschau ? "Zurück zum Admin" : "Zurück zur Übersicht"}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Zurück */}
-        <Link
-          href="/lernen"
-          style={{ color: "black" }}
-          className="inline-flex items-center hover:underline mb-8"
-        >
-          ← Zurück zur Übersicht
-        </Link>
+        {!istVorschau && (
+          <Link
+            href="/lernen"
+            style={{ color: "black" }}
+            className="inline-flex items-center hover:underline mb-8"
+          >
+            ← Zurück zur Übersicht
+          </Link>
+        )}
 
         {/* Kurs-Header */}
         <div
@@ -123,30 +175,39 @@ export default function LernenKursPage() {
           <h1 className="text-3xl font-bold text-white mb-2">{kurs.titel}</h1>
           <p className="text-white/80 mb-4">{kurs.beschreibung}</p>
 
-          {/* Fortschrittsbalken */}
-          <div className="bg-white/30 rounded-full h-3 overflow-hidden">
-            <div
-              className="bg-white h-full transition-all duration-500"
-              style={{ width: `${prozent}%` }}
-            />
-          </div>
-          <p className="text-white/80 text-sm mt-2">
-            {fortschritt?.lektionenAbgeschlossen.length || 0} von {kurs.lektionen.length}{" "}
-            Lektionen abgeschlossen
-            {fortschritt?.abgeschlossenAm && " - Kurs abgeschlossen!"}
-          </p>
+          {/* Fortschrittsbalken - nur im Lernmodus */}
+          {!istVorschau && (
+            <>
+              <div className="bg-white/30 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-white h-full transition-all duration-500"
+                  style={{ width: `${prozent}%` }}
+                />
+              </div>
+              <p className="text-white/80 text-sm mt-2">
+                {fortschritt?.lektionenAbgeschlossen.length || 0} von {kurs.lektionen.length}{" "}
+                Lektionen abgeschlossen
+                {fortschritt?.abgeschlossenAm && " - Kurs abgeschlossen!"}
+              </p>
+            </>
+          )}
+          {istVorschau && (
+            <p className="text-white/80 text-sm">
+              {kurs.lektionen.length} Lektionen
+            </p>
+          )}
         </div>
 
         {/* Lektionen */}
         <div className="space-y-3">
           {kurs.lektionen.map((lektion, index) => {
-            const abgeschlossen = istLektionAbgeschlossen(lektion.id);
-            const istNaechste = naechsteLektion()?.id === lektion.id;
+            const abgeschlossen = !istVorschau && istLektionAbgeschlossen(lektion.id);
+            const istNaechste = !istVorschau && naechsteLektion()?.id === lektion.id;
 
             return (
               <Link
                 key={lektion.id}
-                href={`/lernen/kurs/${kursId}/lektion/${lektion.id}`}
+                href={`/lernen/kurs/${kursId}/lektion/${lektion.id}${istVorschau ? `?vorschau=${vorschauParam}` : ""}`}
                 className={`block p-4 rounded-lg border-2 ${
                   abgeschlossen
                     ? "bg-green-50 border-green-300"

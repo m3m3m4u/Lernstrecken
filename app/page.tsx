@@ -39,18 +39,8 @@ export default function Home() {
         </p>
       </header>
 
-      {/* Login-Button */}
-      <section className="max-w-6xl mx-auto mb-8 text-center">
-        <a
-          href="/login"
-          className="inline-block bg-black hover:bg-gray-800 text-white font-bold py-3 px-8 rounded-lg"
-        >
-          Anmelden zum Lernen
-        </a>
-      </section>
-
       {/* Kurs-Grid */}
-      <section className="max-w-6xl mx-auto">
+      <section className="max-w-7xl mx-auto">
         {loading ? (
           <div className="text-center">
             <p style={{ color: 'black' }}>Kurse werden geladen...</p>

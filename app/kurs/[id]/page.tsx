@@ -33,6 +33,7 @@ export default function KursPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 p-8 md:p-16">
+      <div className="max-w-7xl mx-auto">
       {/* Zurück-Button */}
       <Link
         href="/"
@@ -49,7 +50,7 @@ export default function KursPage() {
       </div>
 
       {/* Lektionen */}
-      <section className="max-w-4xl">
+      <section>
         <h2 style={{ color: "black" }} className="text-2xl font-bold mb-6">
           Lektionen
         </h2>
@@ -90,6 +91,7 @@ export default function KursPage() {
           </div>
         )}
       </section>
+      </div>
     </main>
   );
 }

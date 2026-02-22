@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Kurs, Lektion, LektionInhalt, QuizInhalt, BenutzerFortschritt, QuizFrage, QuizAntwort } from "@/data/types";
 
@@ -24,8 +24,12 @@ interface QuizState {
 export default function LernenLektionPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const kursId = params.id as string;
   const lektionId = params.lektionId as string;
+  const vorschauParam = searchParams.get("vorschau");
+  const istVorschau = vorschauParam === "true" || vorschauParam === "admin";
+  const istAdminVorschau = vorschauParam === "admin";
 
   const [benutzer, setBenutzer] = useState<Benutzer | null>(null);
   const [kurs, setKurs] = useState<Kurs | null>(null);
@@ -47,6 +51,29 @@ export default function LernenLektionPage() {
   const [lektionAbgeschlossen, setLektionAbgeschlossen] = useState(false);
 
   useEffect(() => {
+    if (istVorschau) {
+      // Vorschau-Modus: Nur Kurs laden, kein Login nötig
+      fetch(`/api/kurse/${kursId}`)
+        .then((res) => res.json())
+        .then((kursData) => {
+          if (kursData.error) {
+            router.push("/admin/dashboard");
+            return;
+          }
+          setKurs(kursData);
+          const gefundeneLektion = kursData.lektionen.find(
+            (l: Lektion) => l.id === lektionId
+          );
+          if (gefundeneLektion) {
+            setLektion(gefundeneLektion);
+          }
+        })
+        .catch((err) => {
+          console.error("Fehler:", err);
+        });
+      return;
+    }
+
     const gespeicherterBenutzer = sessionStorage.getItem("benutzer");
     if (!gespeicherterBenutzer) {
       router.push("/login");
@@ -81,7 +108,7 @@ export default function LernenLektionPage() {
       .catch((err) => {
         console.error("Fehler:", err);
       });
-  }, [router, kursId, lektionId]);
+  }, [router, kursId, lektionId, istVorschau]);
 
   // Hole alle Fragen aus dem aktuellen Quiz-Inhalt
   const getCurrentQuizFragen = (): QuizFrage[] => {
@@ -255,8 +282,13 @@ export default function LernenLektionPage() {
         wiederholungsFragenIndex: 0,
       });
     } else {
-      // Lektion abschließen und Fortschritt speichern
-      speichereFortschritt();
+      // Lektion abschließen
+      if (istVorschau) {
+        // Im Vorschau-Modus: Einfach als abgeschlossen markieren ohne Speichern
+        setLektionAbgeschlossen(true);
+      } else {
+        speichereFortschritt();
+      }
     }
   };
 
@@ -309,12 +341,17 @@ export default function LernenLektionPage() {
   }
 
   if (lektionAbgeschlossen) {
-    const alleAbgeschlossen =
+    const alleAbgeschlossen = !istVorschau &&
       (fortschritt?.lektionenAbgeschlossen.length || 0) >= kurs.lektionen.length;
 
     return (
       <main className="min-h-screen bg-slate-100 p-8 flex items-center justify-center">
         <div className="bg-white p-8 rounded-xl border-2 border-gray-300 text-center max-w-md">
+          {istVorschau && (
+            <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 mb-4">
+              <span className="text-amber-800 font-medium text-sm">{istAdminVorschau ? "Admin-Vorschau" : "Gast-Modus"}</span>
+            </div>
+          )}
           <h1 style={{ color: "black" }} className="text-2xl font-bold mb-4">
             {alleAbgeschlossen ? "Kurs abgeschlossen!" : "Lektion abgeschlossen!"}
           </h1>
@@ -326,12 +363,46 @@ export default function LernenLektionPage() {
               Herzlichen Glückwunsch! Du hast den gesamten Kurs abgeschlossen!
             </p>
           )}
-          <Link
-            href={`/lernen/kurs/${kursId}`}
-            className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg inline-block"
-          >
-            Zurück zum Kurs
-          </Link>
+          {istVorschau && (
+            <p className="text-sm text-amber-600 mb-4">
+              {istAdminVorschau ? "Vorschau-Modus — Fortschritt wird nicht gespeichert." : "Melde dich an, um deinen Fortschritt zu speichern."}
+            </p>
+          )}
+          <div className="flex gap-3 justify-center flex-wrap">
+            <Link
+              href={`/lernen/kurs/${kursId}${istVorschau ? `?vorschau=${vorschauParam}` : ""}`}
+              className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg inline-block"
+            >
+              Zurück zum Kurs
+            </Link>
+            {istVorschau && (
+              <>
+                {istAdminVorschau ? (
+                  <Link
+                    href="/admin/dashboard"
+                    className="bg-slate-500 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-lg inline-block"
+                  >
+                    Zum Admin
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      href="/login"
+                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg inline-block"
+                    >
+                      Jetzt anmelden
+                    </Link>
+                    <Link
+                      href="/"
+                      className="bg-slate-400 hover:bg-slate-500 text-white font-bold py-3 px-6 rounded-lg inline-block"
+                    >
+                      Zur Übersicht
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </main>
     );
@@ -478,11 +549,28 @@ export default function LernenLektionPage() {
 
   return (
     <main className="min-h-screen bg-slate-100 p-8 md:p-16">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-7xl mx-auto">
+        {/* Vorschau-Banner */}
+        {istVorschau && (
+          <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+              <span className="text-amber-800 font-medium">{istAdminVorschau ? "Admin-Vorschau" : "Gast-Modus"}</span>
+              <span className="text-amber-600 text-sm">— Ergebnisse werden nicht gespeichert</span>
+            </div>
+            <button
+              onClick={() => router.push(istAdminVorschau ? "/admin/dashboard" : "/login")}
+              className={`${istAdminVorschau ? "text-amber-700 hover:text-amber-900" : "text-blue-600 hover:text-blue-800"} font-medium text-sm hover:underline`}
+            >
+              {istAdminVorschau ? "Zurück zum Admin" : "Jetzt anmelden"}
+            </button>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <Link
-            href={`/lernen/kurs/${kursId}`}
+            href={`/lernen/kurs/${kursId}${istVorschau ? `?vorschau=${vorschauParam}` : ""}`}
             style={{ color: "black" }}
             className="hover:underline"
           >

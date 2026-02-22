@@ -12,8 +12,26 @@ export default function KursEditor() {
   const [kurs, setKurs] = useState<Kurs | null>(null);
   const [kursTitelEdit, setKursTitelEdit] = useState("");
   const [kursBeschreibungEdit, setKursBeschreibungEdit] = useState("");
+  const [kursFarbeEdit, setKursFarbeEdit] = useState("");
   const [neueLektionTitel, setNeueLektionTitel] = useState("");
   const [editLektion, setEditLektion] = useState<Lektion | null>(null);
+
+  const farben = [
+    { name: "Blau", value: "from-blue-500 to-indigo-600" },
+    { name: "Grün", value: "from-emerald-500 to-green-600" },
+    { name: "Rot", value: "from-rose-500 to-red-600" },
+    { name: "Orange", value: "from-amber-500 to-orange-600" },
+    { name: "Lila", value: "from-violet-500 to-purple-600" },
+    { name: "Cyan", value: "from-sky-500 to-blue-600" },
+    { name: "Pink", value: "from-pink-500 to-rose-600" },
+    { name: "Gelb", value: "from-yellow-400 to-amber-500" },
+    { name: "Türkis", value: "from-teal-500 to-cyan-600" },
+    { name: "Indigo", value: "from-indigo-500 to-violet-600" },
+    { name: "Lime", value: "from-lime-500 to-green-500" },
+    { name: "Fuchsia", value: "from-fuchsia-500 to-pink-600" },
+    { name: "Schwarz", value: "from-gray-700 to-gray-900" },
+    { name: "Braun", value: "from-amber-700 to-orange-800" },
+  ];
   
   // Inhalt-Editor State
   const [inhaltTyp, setInhaltTyp] = useState<"video" | "youtube" | "markdown" | "quiz">("markdown");
@@ -37,6 +55,7 @@ export default function KursEditor() {
           setKurs(data);
           setKursTitelEdit(data.titel);
           setKursBeschreibungEdit(data.beschreibung);
+          setKursFarbeEdit(data.farbe || "");
         }
       })
       .catch((err) => {
@@ -279,7 +298,7 @@ export default function KursEditor() {
 
   return (
     <main className="min-h-screen bg-slate-100 p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center gap-4 mb-8">
           <button
@@ -329,6 +348,31 @@ export default function KursEditor() {
                 className="w-full border-2 border-gray-300 rounded-lg px-4 py-2"
                 rows={2}
               />
+            </div>
+            <div>
+              <label style={{ color: "black" }} className="block text-sm font-medium mb-1">
+                Farbe
+              </label>
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-lg bg-gradient-to-r ${kursFarbeEdit} flex-shrink-0 shadow-sm`} />
+                <div className="flex gap-2 flex-wrap">
+                  {farben.map((f) => (
+                    <button
+                      key={f.value}
+                      onClick={() => {
+                        setKursFarbeEdit(f.value);
+                        speichereKurs({ ...kurs, farbe: f.value });
+                      }}
+                      className={`w-9 h-9 rounded-full bg-gradient-to-r ${f.value} transition-all duration-150 ${
+                        kursFarbeEdit === f.value
+                          ? "ring-3 ring-offset-2 ring-black scale-110"
+                          : "hover:scale-110"
+                      }`}
+                      title={f.name}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
